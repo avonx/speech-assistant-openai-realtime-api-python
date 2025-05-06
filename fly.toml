@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for speech-assistant-openai-realtime-api-python on 2025-05-07T01:28:29+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'speech-assistant-openai-realtime-api-python'
+primary_region = 'nrt'
+
+[build]
+
+[env]
+  PORT = "5050"
+
+[http_service]
+  internal_port = 5050
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = false
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
