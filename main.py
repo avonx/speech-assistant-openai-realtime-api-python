@@ -292,7 +292,12 @@ async def initialize_session(openai_ws):
     session_update = {
         "type": "session.update",
         "session": {
-            "turn_detection": {"type": "server_vad"},
+            "turn_detection": {
+                "type": "server_vad",
+                "threshold": 0.7,  # 音声検出の閾値（高いほど音声検出感度が下がる）
+                "silence_duration_ms": 300,  # 無音判定までの時間（ミリ秒）
+                "prefix_padding_ms": 200,  # 音声検出前の無音部分（ミリ秒）
+            },
             "input_audio_format": "g711_ulaw",
             "output_audio_format": "g711_ulaw",
             "voice": VOICE,
