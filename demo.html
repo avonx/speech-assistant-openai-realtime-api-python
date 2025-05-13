@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桜花亭 - 会話ログ管理システム</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #9D2328;
+            --secondary: #2A363B;
+            --accent: #D9C5B2;
+            --light: #F5F3F0;
+            --dark: #1A1A1A;
+            --sidebar-width: 240px;
+            --header-height: 60px;
+            --tab-height: 50px;
+            --border-color: #e0e0e0;
+            --hover-bg: rgba(157, 35, 40, 0.05);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: white;
+            border-right: 1px solid var(--border-color);
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            z-index: 10;
+        }
+        
+        .logo-container {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .mini-logo {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            border: 2px solid var(--accent);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .logo-text {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+        
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+        
+        .menu-section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #888;
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+        
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--secondary);
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background-color: var(--hover-bg);
+            color: var(--primary);
+        }
+        
+        .menu-item i {
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .menu-item.active {
+            border-left: 3px solid var(--primary);
+            font-weight: 500;
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            height: 100vh;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .top-header {
+            height: var(--header-height);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            background-color: white;
+        }
+        
+        .page-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .notification-icon, .settings-icon, .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-color: var(--light);
+        }
+        
+        .user-avatar {
+            background-color: var(--accent);
+            color: var(--dark);
+            font-weight: 500;
+        }
+        
+        .tabs {
+            display: flex;
+            height: var(--tab-height);
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab {
+            padding: 0 25px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            color: #666;
+            font-size: 0.95rem;
+            user-select: none;
+        }
+        
+        .tab:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        .tab.active:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+        }
+        
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .content-sidebar {
+            width: 300px;
+            background-color: white;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-bar {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            outline: none;
+            background-color: var(--light);
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+        
+        .date-navigator {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .calendar-widget {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        
+        .calendar-day-name {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .calendar-day {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border-radius: 50%;
+        }
+        
+        .calendar-day:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .calendar-day.current {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .calendar-day.has-logs {
+            font-weight: 500;
+            border: 1px solid var(--accent);
+        }
+        
+        .month-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .month-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .month-nav {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .month-nav-btn {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .month-nav-btn:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .logs-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .log-item {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .log-item:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .log-item.active {
+            background-color: var(--hover-bg);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .log-time {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .log-caller {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+        
+        .log-preview {
+            font-size: 0.85rem;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .log-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-left: 5px;
+        }
+        
+        .status-completed {
+            background-color: #E8F5E9;
+            color: #388E3C;
+        }
+        
+        .status-reservation {
+            background-color: #E3F2FD;
+            color: #1976D2;
+        }
+        
+        .status-inquiry {
+            background-color: #FFF8E1;
+            color: #FFA000;
+        }
+        
+        .content-main {
+            flex: 1;
+            background-color: #fafafa;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .conversation-view {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .conversation-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .conversation-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .conversation-title h2 {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+        
+        .conversation-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-button {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: var(--light);
+            border: none;
+            color: var(--secondary);
+        }
+        
+        .action-button.primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .conversation-info {
+            display: flex;
+            gap: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .message {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .avatar.user {
+            background: var(--accent);
+            color: var(--dark);
+        }
+        
+        .name {
+            font-weight: 500;
+        }
+        
+        .time {
+            font-size: 0.8rem;
+            color: #777;
+            margin-left: auto;
+        }
+        
+        .message-content {
+            background: #F0F0F0;
+            padding: 1rem;
+            border-radius: 12px;
+            position: relative;
+            margin-left: 50px;
+        }
+        
+        .message-content:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 10px solid #F0F0F0;
+        }
+        
+        .message.assistant .message-content {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .message.assistant .message-content:before {
+            border-right-color: var(--secondary);
+        }
+        
+        .message.user .message-content {
+            background: var(--light);
+            border: 1px solid #ddd;
+        }
+        
+        .message.user .message-content:before {
+            border-right-color: var(--light);
+        }
+        
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            background: var(--secondary);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .ai-badge:before {
+            content: "●";
+            color: var(--primary);
+            margin-right: 5px;
+        }
+        
+        .analytics-panel {
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .analytics-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: var(--secondary);
+        }
+        
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .stat-title {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+        
+        @media (max-width: 1200px) {
+            .content-sidebar {
+                width: 250px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .logo-text, .menu-item span {
+                display: none;
+            }
+            
+            .menu-item {
+                justify-content: center;
+                padding: 15px 0;
+            }
+            
+            .menu-item i {
+                margin-right: 0;
+                font-size: 1.3rem;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+                width: calc(100% - 70px);
+            }
+            
+            .menu-section-title {
+                text-align: center;
+                padding: 10px 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .content-sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <div class="mini-logo">桜花</div>
+                <div class="logo-text">桜花亭 管理システム</div>
+            </div>
+            <nav class="sidebar-menu">
+                <div class="menu-section-title">メインメニュー</div>
+                <div class="menu-item">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>ダッシュボード</span>
+                </div>
+                <div class="menu-item active">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>会話ログ</span>
+                </div>
+                <div class="menu-item">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>予約管理</span>
+                </div>
+                <div class="menu-item">
+                    <i class="bi bi-people"></i>
+                    <span>顧客情報</span>
+                </div>
+                
+                <div class="menu-section-title">システム</div>
+                <div class="menu-item">
+                    <i class="bi bi-gear"></i>
+                    <span>設定</span>
+                </div>
+                <div class="menu-item">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>レポート</span>
+                </div>
+                <div class="menu-item">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>分析</span>
+                </div>
+                <div class="menu-item">
+                    <i class="bi bi-question-circle"></i>
+                    <span>ヘルプ</span>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="page-title">会話ログ管理</div>
+                <div class="user-menu">
+                    <div class="notification-icon">
+                        <i class="bi bi-bell"></i>
+                    </div>
+                    <div class="settings-icon">
+                        <i class="bi bi-gear"></i>
+                    </div>
+                    <div class="user-avatar">管</div>
+                </div>
+            </header>
+            
+            <div class="tabs">
+                <div class="tab active">すべての会話</div>
+                <div class="tab">予約関連</div>
+                <div class="tab">問い合わせ</div>
+                <div class="tab">フラグ付き</div>
+                <div class="tab">分析レポート</div>
+            </div>
+            
+            <div class="content-area">
+                <!-- Sidebar with logs list -->
+                <div class="content-sidebar">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="ログを検索...">
+                    </div>
+                    
+                    <div class="date-navigator">
+                        <div class="month-selector">
+                            <div class="month-name">2024年5月</div>
+                            <div class="month-nav">
+                                <div class="month-nav-btn"><i class="bi bi-chevron-left"></i></div>
+                                <div class="month-nav-btn"><i class="bi bi-chevron-right"></i></div>
+                            </div>
+                        </div>
+                        <div class="calendar-widget">
+                            <div class="calendar-day-name">日</div>
+                            <div class="calendar-day-name">月</div>
+                            <div class="calendar-day-name">火</div>
+                            <div class="calendar-day-name">水</div>
+                            <div class="calendar-day-name">木</div>
+                            <div class="calendar-day-name">金</div>
+                            <div class="calendar-day-name">土</div>
+                            
+                            <div class="calendar-day">28</div>
+                            <div class="calendar-day">29</div>
+                            <div class="calendar-day">30</div>
+                            <div class="calendar-day">1</div>
+                            <div class="calendar-day">2</div>
+                            <div class="calendar-day">3</div>
+                            <div class="calendar-day">4</div>
+                            
+                            <div class="calendar-day">5</div>
+                            <div class="calendar-day">6</div>
+                            <div class="calendar-day">7</div>
+                            <div class="calendar-day">8</div>
+                            <div class="calendar-day has-logs">9</div>
+                            <div class="calendar-day has-logs">10</div>
+                            <div class="calendar-day">11</div>
+                            
+                            <div class="calendar-day current">12</div>
+                            <div class="calendar-day">13</div>
+                            <div class="calendar-day">14</div>
+                            <div class="calendar-day">15</div>
+                            <div class="calendar-day">16</div>
+                            <div class="calendar-day">17</div>
+                            <div class="calendar-day">18</div>
+                        </div>
+                    </div>
+                    
+                    <div class="logs-list">
+                        <div class="log-item active">
+                            <div class="log-time">
+                                <span>12:01 - 12:03</span>
+                                <span class="log-status status-reservation">予約</span>
+                            </div>
+                            <div class="log-caller">タナカ様</div>
+                            <div class="log-preview">金曜8時4名、個室、昇進祝い</div>
+                        </div>
+                        
+                        <div class="log-item">
+                            <div class="log-time">
+                                <span>11:23 - 11:25</span>
+                                <span class="log-status status-inquiry">問合せ</span>
+                            </div>
+                            <div class="log-caller">スズキ様</div>
+                            <div class="log-preview">コース内容、個室空き状況</div>
+                        </div>
+                        
+                        <div class="log-item">
+                            <div class="log-time">
+                                <span>10:45 - 10:47</span>
+                                <span class="log-status status-completed">完了</span>
+                            </div>
+                            <div class="log-caller">サトウ様</div>
+                            <div class="log-preview">本日予約キャンセル (19:00, 2名)</div>
+                        </div>
+                        
+                        <div class="log-item">
+                            <div class="log-time">
+                                <span>09:30 - 09:32</span>
+                                <span class="log-status status-reservation">予約</span>
+                            </div>
+                            <div class="log-caller">ヤマダ様</div>
+                            <div class="log-preview">水曜ランチ、アレルギー対応</div>
+                        </div>
+                        
+                        <div class="log-item">
+                            <div class="log-time">
+                                <span>09:05 - 09:08</span>
+                                <span class="log-status status-inquiry">問合せ</span>
+                            </div>
+                            <div class="log-caller">イトウ様</div>
+                            <div class="log-preview">20名宴会、貸切対応可能か</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Main content with conversation -->
+                <div class="content-main">
+                    <div class="conversation-view">
+                        <div class="conversation-header">
+                            <div class="conversation-title">
+                                <h2>タナカ様 との通話</h2>
+                                <div class="conversation-actions">
+                                    <button class="action-button"><i class="bi bi-telephone-forward"></i> 発信</button>
+                                    <button class="action-button"><i class="bi bi-flag"></i> 要確認</button>
+                                    <button class="action-button primary"><i class="bi bi-plus-circle"></i> 予約追加</button>
+                                </div>
+                            </div>
+                            <div class="conversation-info">
+                                <div class="info-item"><i class="bi bi-calendar"></i> 2024年5月12日</div>
+                                <div class="info-item"><i class="bi bi-clock"></i> 12:01 - 12:03 (2分12秒)</div>
+                                <div class="info-item"><i class="bi bi-telephone"></i> 090-1234-XXXX</div>
+                                <div class="info-item"><i class="bi bi-hash"></i> 発信者番号通知あり</div>
+                            </div>
+                        </div>
+                        
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="avatar">桜</div>
+                                <div class="name">桜花亭 サクラ</div>
+                                <span class="ai-badge">AI</span>
+                                <div class="time">12:01:05</div>
+                            </div>
+                            <div class="message-content">
+                                桜花亭です。いらっしゃいませ。
+                            </div>
+                        </div>
+                        
+                        <div class="message user">
+                            <div class="message-header">
+                                <div class="avatar user">タ</div>
+                                <div class="name">タナカ様</div>
+                                <div class="time">12:01:12</div>
+                            </div>
+                            <div class="message-content">
+                                あの、失礼します。今週の金曜日、7時頃に4名で食事をしたいのですが、予約できますでしょうか。
+                            </div>
+                        </div>
+                        
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="avatar">桜</div>
+                                <div class="name">桜花亭 サクラ</div>
+                                <span class="ai-badge">AI</span>
+                                <div class="time">12:01:22</div>
+                            </div>
+                            <div class="message-content">
+                                金曜7時ですね。確認します。あ、すみません、7時台はほぼ満席で...カウンター席ならありますが、個室がいいなら6時半か8時以降になりますけど。
+                            </div>
+                        </div>
+                        
+                        <div class="message user">
+                            <div class="message-header">
+                                <div class="avatar user">タ</div>
+                                <div class="name">タナカ様</div>
+                                <div class="time">12:01:35</div>
+                            </div>
+                            <div class="message-content">
+                                では8時で個室をお願いします。個室は追加料金がかかりますか？あと、おすすめのコースなどありますか？
+                            </div>
+                        </div>
+                        
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="avatar">桜</div>
+                                <div class="name">桜花亭 サクラ</div>
+                                <span class="ai-badge">AI</span>
+                                <div class="time">12:01:52</div>
+                            </div>
+                            <div class="message-content">
+                                8時の個室了解しました。個室は平日夜5,000円の追加です。おすすめは「初夏の彩り会席」で、お一人15,000円です。旬の食材使ってますよ。日本酒のペアリングもあります、5,000円で。
+                            </div>
+                        </div>
+                        
+                        <div class="message user">
+                            <div class="message-header">
+                                <div class="avatar user">タ</div>
+                                <div class="name">タナカ様</div>
+                                <div class="time">12:02:10</div>
+                            </div>
+                            <div class="message-content">
+                                それでは初夏の彩り会席でお願いします。日本酒のペアリングも2名分でお願いします。あと、1名昇進のお祝いなのですが、何かサプライズはできますか？
+                            </div>
+                        </div>
+                        
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="avatar">桜</div>
+                                <div class="name">桜花亭 サクラ</div>
+                                <span class="ai-badge">AI</span>
+                                <div class="time">12:02:25</div>
+                            </div>
+                            <div class="message-content">
+                                承知しました。昇進のお祝いなら、デザートプレートにメッセージ入れられますよ。無料ですし。あとお花飾るなら2,000円からですけど、どうします？
+                            </div>
+                        </div>
+                        
+                        <div class="message user">
+                            <div class="message-header">
+                                <div class="avatar user">タ</div>
+                                <div class="name">タナカ様</div>
+                                <div class="time">12:02:38</div>
+                            </div>
+                            <div class="message-content">
+                                デザートプレートでお願いします。「ご昇進おめでとう」というメッセージを入れていただけますか。名前は当日お伝えします。予約者は田中、電話番号は090-1234-5678です。
+                            </div>
+                        </div>
+                        
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="avatar">桜</div>
+                                <div class="name">桜花亭 サクラ</div>
+                                <span class="ai-badge">AI</span>
+                                <div class="time">12:02:53</div>
+                            </div>
+                            <div class="message-content">
+                                タナカ様、予約入れました。金曜8時、4名様の個室ですね。初夏の彩り会席と日本酒ペアリング2名分、デザートプレートにメッセージも。当日キャンセルは50%頂きますので、ご了承ください。駐車場は必要ですか？
+                            </div>
+                        </div>
+                        
+                        <div class="message user">
+                            <div class="message-header">
+                                <div class="avatar user">タ</div>
+                                <div class="name">タナカ様</div>
+                                <div class="time">12:03:05</div>
+                            </div>
+                            <div class="message-content">
+                                はい、駐車場1台お願いします。ありがとうございました。
+                            </div>
+                        </div>
+                        
+                        <div class="message assistant">
+                            <div class="message-header">
+                                <div class="avatar">桜</div>
+                                <div class="name">桜花亭 サクラ</div>
+                                <span class="ai-badge">AI</span>
+                                <div class="time">12:03:17</div>
+                            </div>
+                            <div class="message-content">
+                                駐車場1台、承知しました。それではお待ちしております。ありがとうございました。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-panel">
+                        <div class="analytics-title">通話分析</div>
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div class="stat-title">通話時間</div>
+                                <div class="stat-value">2分12秒</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-title">応答時間（平均）</div>
+                                <div class="stat-value">1.8秒</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-title">音声認識精度</div>
+                                <div class="stat-value">98%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-title">通話結果</div>
+                                <div class="stat-value">予約成立</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html> 
