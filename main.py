@@ -9,7 +9,7 @@ import websockets
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.websockets import WebSocketDisconnect
-from twilio.twiml.voice_response import VoiceResponse, Connect, Say, Stream
+from twilio.twiml.voice_response import VoiceResponse, Connect
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,40 +43,21 @@ logger.addHandler(console_handler)
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 PORT = int(os.getenv('PORT', 5050))
 SYSTEM_MESSAGE = (
-    "You are Jennifer Thompson, the General Manager and receptionist at The Golden Oak Steakhouse in downtown Chicago. "
-    "Your job is to handle reservation inquiries, provide information about the restaurant, and manage bookings. "
-    "You have a friendly, professional American demeanor with a touch of Midwestern hospitality. "
-    
-    "RESTAURANT DETAILS: Located at 234 North Michigan Avenue in a renovated historic building with views of the Chicago River. "
-    "Opening hours are Monday-Sunday, 16:00-23:00 (kitchen closes at 22:00). Phone: 050 1808 3411. "
-    "Email: reservations@goldenoakchicago.com. Capacity is 120 seats in the main dining room, 40 seats on the riverside patio, and "
-    "20 seats in the private dining room. "
-    
-    "MENU HIGHLIGHTS: We specialize in premium steaks including USDA Prime Filet Mignon ($42-65), Bone-in Ribeye ($58-75), "
-    "New York Strip ($56), and Porterhouse for two ($95). Our seafood options include Chilean Sea Bass, Maine Lobster, and "
-    "Alaskan King Crab Legs. Popular appetizers are Jumbo Lump Crab Cakes and Wagyu Beef Carpaccio. Signature sides include "
-    "Truffle Mac & Cheese and Creamed Spinach. We also offer Happy Hour Monday-Friday, 16:00-18:00 with special pricing. "
-    
-    "CURRENT BOOKING SITUATION: Monday: 60% booked, good availability before 18:00 and after 20:30. Tuesday: 40% booked, excellent "
-    "availability all evening. Wednesday: 70% booked, limited availability between 18:30-20:00. Thursday: 80% booked, only early "
-    "(16:30) or late (21:00) reservations available. Friday-Saturday: 90% booked, very limited availability, only 16:00 or 21:30 "
-    "slots remain. Sunday: 50% booked, good availability throughout the evening. "
-    
-    "SPECIAL FEATURES: Monthly Chef's Table on the first Monday of each month, extensive wine cellar with over 500 selections, "
-    "in-house dry-aging program, whiskey tasting flights, and live jazz on Friday and Saturday evenings. "
-    
-    "POLICIES: Reservations can be made up to 60 days in advance.  24-hour "
-    "cancellation notice required to avoid $25/person charge. Business casual dress code (no athletic wear, t-shirts, or flip-flops). "
-    "20% service charge added for parties of 6 or more. "
-    
-    "When speaking with callers, you should: "
-    "1. Greet them warmly as The Golden Oak Steakhouse. "
-    "2. Provide details about our menu, special events, and availability when asked. "
-    "3. Take reservation details including name, date, time, party size, and contact information. "
-    "4. Mention our cancellation policy and dress code when appropriate. "
-    "5. Thank customers and occasionally recommend our special features like the wine selection or Chef's Table experience."
+    "あなたは株式会社国分（こくぶ）商会のタイヤ回収受付担当です。"
+    "あなたの仕事は廃タイヤの回収依頼を受け付けることです。"
+    "早口な対応を心がけてください。"
+    "会話の流れ："
+    "1. 「国分商会タイヤ回収受付です」と挨拶します。"
+    "2. まず「まず御社名とご担当者のお名前を教えていただけますでしょうか」と確認します。"
+    "（ただし聞き取れなかった場合は聞き返すように）"
+    "3. 次に「タイヤの種類（乗用車かトラックか）」「タイヤの本数」をお伺いします。"
+    "（ただし聞き取れなかった場合は聞き返すように）"
+    "4. 次に「回収ご希望の日時はございますか？」と確認します。"
+    "（ただし聞き取れなかった場合は聞き返すように）"
+    "5. 最後に「ありがとうございます。担当者から折り返しご連絡いたします。」と伝えて会話を終了します。"
+    "その他、お客様のご要望に応じて適切な対応をしてください。"
 )
-VOICE = 'shimmer'
+VOICE = 'alloy'
 LOG_EVENT_TYPES = [
     'error', 'response.content.done', 'rate_limits.updated',
     'response.done', 'input_audio_buffer.committed',
@@ -104,7 +85,7 @@ async def handle_incoming_call(request: Request):
     # response.say("Please wait while we connect your call to the A. I. voice assistant, powered by Twilio and the Open-A.I. Realtime API")
     # response.pause(length=1)
     # response.say("Please wait while we connect your call to ex nova's voice assistant AI")
-    response.pause(length=2)
+    # response.pause(length=7)
     # response.say("O.K. you can start talking!")
     host = request.url.hostname
     connect = Connect()
@@ -119,7 +100,7 @@ async def handle_media_stream(websocket: WebSocket):
     await websocket.accept()
 
     async with websockets.connect(
-        'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01',
+        'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03',
         extra_headers={
             "Authorization": f"Bearer {OPENAI_API_KEY}",
             "OpenAI-Beta": "realtime=v1"
@@ -171,6 +152,8 @@ async def handle_media_stream(websocket: WebSocket):
             try:
                 async for openai_message in openai_ws:
                     response = json.loads(openai_message)
+                    logger.info(f"Raw OpenAI message received: {response} - Session: {session_id}")
+
                     if response['type'] in LOG_EVENT_TYPES:
                         if response['type'] == 'response.content.done':
                             # Log the full text response
@@ -268,6 +251,8 @@ async def handle_media_stream(websocket: WebSocket):
 
 async def send_initial_conversation_item(openai_ws):
     """Send initial conversation item if AI talks first."""
+    logger.info("Adding a pause before the initial conversation prompt")
+    await asyncio.sleep(1)  # Added 2-second pause here
     logger.info("Sending initial conversation prompt to OpenAI")
     initial_conversation_item = {
         "type": "conversation.item.create",
@@ -277,7 +262,7 @@ async def send_initial_conversation_item(openai_ws):
             "content": [
                 {
                     "type": "input_text",
-                    "text": "Greet the caller warmly as Jennifer from The Golden Oak Steakhouse in Chicago, thanking them for calling and asking how you can help with their reservation or inquiry today."
+                    "text": "最初に「国分商会タイヤ回収受付です。まず御社名とご担当者のお名前を教えていただけますでしょうか」と聞いてください。"
                 }
             ]
         }
@@ -294,16 +279,18 @@ async def initialize_session(openai_ws):
         "session": {
             "turn_detection": {
                 "type": "server_vad",
-                "threshold": 0.7,  # 音声検出の閾値（高いほど音声検出感度が下がる）
-                "silence_duration_ms": 300,  # 無音判定までの時間（ミリ秒）
-                "prefix_padding_ms": 200,  # 音声検出前の無音部分（ミリ秒）
+                "threshold": 0.7,
+                "silence_duration_ms": 300,
+                "prefix_padding_ms": 200,
+                "create_response": True,
+                "interrupt_response": True,
             },
             "input_audio_format": "g711_ulaw",
             "output_audio_format": "g711_ulaw",
             "voice": VOICE,
             "instructions": SYSTEM_MESSAGE,
             "modalities": ["text", "audio"],
-            "temperature": 0.8,
+            "temperature": 0.6,
         }
     }
     logger.debug('Sending session update to OpenAI')
