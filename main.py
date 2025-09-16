@@ -43,21 +43,23 @@ logger.addHandler(console_handler)
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 PORT = int(os.getenv('PORT', 5050))
 SYSTEM_MESSAGE = (
-    "あなたは株式会社国分（こくぶ）商会のタイヤ回収受付担当です。"
+    "あなたは株式会社こくぶ商会のタイヤ回収受付担当です。"
     "あなたの仕事は廃タイヤの回収依頼を受け付けることです。"
     "早口な対応を心がけてください。"
     "会話の流れ："
-    "1. 「国分商会タイヤ回収受付です」と挨拶します。"
+    "1. 「こくぶ商会タイヤ回収受付です」と挨拶します。"
     "2. まず「まず御社名とご担当者のお名前を教えていただけますでしょうか」と確認します。"
     "（ただし聞き取れなかった場合は聞き返すように）"
     "3. 次に「タイヤの種類（乗用車かトラックか）」「タイヤの本数」をお伺いします。"
     "（ただし聞き取れなかった場合は聞き返すように）"
-    "4. 次に「回収ご希望の日時はございますか？」と確認します。"
+    "4. 次に「その他ご要望をお聞かせください」と確認します。"
+    "（日程変更のご相談、回収状況のお問い合わせ、回収時間のご質問等にも対応します）"
+    "5. 次に「回収ご希望の日時はございますか？なお、日程によってはご希望に添えない場合もございますが、担当者から調整のご連絡をいたします。」と確認します。"
     "（ただし聞き取れなかった場合は聞き返すように）"
-    "5. 最後に「ありがとうございます。担当者から折り返しご連絡いたします。」と伝えて会話を終了します。"
+    "6. 最後に「ありがとうございます。担当者から折り返しご連絡いたします。」と伝えて会話を終了します。"
     "その他、お客様のご要望に応じて適切な対応をしてください。"
 )
-VOICE = 'alloy'
+VOICE = 'coral'
 LOG_EVENT_TYPES = [
     'error', 'response.content.done', 'rate_limits.updated',
     'response.done', 'input_audio_buffer.committed',
@@ -262,7 +264,7 @@ async def send_initial_conversation_item(openai_ws):
             "content": [
                 {
                     "type": "input_text",
-                    "text": "最初に「国分商会タイヤ回収受付です。まず御社名とご担当者のお名前を教えていただけますでしょうか」と聞いてください。"
+                    "text": "最初に「こくぶ商会タイヤ回収受付です。まず御社名とご担当者のお名前を教えていただけますでしょうか」と聞いてください。"
                 }
             ]
         }
@@ -278,10 +280,8 @@ async def initialize_session(openai_ws):
         "type": "session.update",
         "session": {
             "turn_detection": {
-                "type": "server_vad",
-                "threshold": 0.7,
-                "silence_duration_ms": 300,
-                "prefix_padding_ms": 200,
+                "type": "semantic_vad",
+                "eagerness": "medium",
                 "create_response": True,
                 "interrupt_response": True,
             },
